@@ -6,7 +6,10 @@ Part of [gazeGait](https://github.com/thommakoon/gaze-gait-process) as a git sub
 
 ## Publication
 
-> **TODO:** Add paper citation and DOI when available.
+Han, M., Shin, Y., Park, Y., Park, G., & Oakley, I. *Effects of Stress on 3D Interface Interaction Techniques.* SSRN (2026).  
+https://ssrn.com/abstract=6052256 · https://doi.org/10.2139/ssrn.6052256
+
+This PracticeTask app implements the Fitts / 3D interface interaction paradigm used in that work (eye, head, and hand cursor conditions with dwell and pinch selection).
 
 ## Android package
 
