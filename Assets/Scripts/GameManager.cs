@@ -47,9 +47,12 @@ public class GameManager : MonoBehaviour
     private float defaultDistance = 2.0f;
     private float MINIMUM_VELOCITY = 1.0f;
 
+    [Header("Trial logging")]
+    [SerializeField] float trialLogRateHz = 100f;
+    float _trialLogAccum;
+    int _trialLogSeq;
 
-
-
+    float TrialLogIntervalSec => trialLogRateHz > 0f ? 1f / trialLogRateHz : 0f;
     public void makeSound(bool success)
     {
         if (success)
@@ -132,14 +135,19 @@ public class GameManager : MonoBehaviour
                 {
                     case Study.CursorType.Eye:
                         data_to_save_eye = new TrialData<EyeCursorData>(study);
+                        data_to_save_eye.log_sample_rate_hz = trialLogRateHz;
                         break;
                     case Study.CursorType.Head:
                         data_to_save_head = new TrialData<HeadCursorData>(study);
+                        data_to_save_head.log_sample_rate_hz = trialLogRateHz;
                         break;
                     case Study.CursorType.Hand:
                         data_to_save_hand = new TrialData<HandCursorData>(study);
+                        data_to_save_hand.log_sample_rate_hz = trialLogRateHz;
                         break;
                 }
+                _trialLogAccum = 0f;
+                _trialLogSeq = 0;
                 break;
 
             case SCENE.AFTER_TRIAL:
@@ -216,33 +224,17 @@ public class GameManager : MonoBehaviour
 
                 study.fittsLaw.current_elapsed_time += Time.deltaTime;
 
-                float currentTime = Time.realtimeSinceStartup;
-                long unixTimeMilliseconds = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
-
-
-
-                Vector3 currentTargetPosition = targetControl.getOneTarget(study.fittsLaw.endNum).position;
-                //InputRayUtils.TryGetEyeGazeRay(out eyeRay);
-                switch (study.currentCursor)
+                _trialLogAccum += Time.deltaTime;
+                float logInterval = TrialLogIntervalSec;
+                if (logInterval > 0f)
                 {
-                    case Study.CursorType.Eye:
-                        EyeCursorData currentEyeCursor = new EyeCursorData(new Ray(cursorController.eyePosition, cursorController.eyeDirection));
-                        float eye_angularDistance = Vector3.Angle((currentTargetPosition - cursorController.eyePosition), (cursorController.eyeDirection));
-                        data_to_save_eye.Add(new FrameData<EyeCursorData>(currentTime, unixTimeMilliseconds, study.fittsLaw, head, currentEyeCursor,
-                            currentTargetPosition, eye_angularDistance));
-                        break;
-                    case Study.CursorType.Head:
-                        HeadCursorData currentHeadCursor = new HeadCursorData(new Ray(cursorController.headPosition, cursorController.headDirection));
-                        float head_angularDistance = Vector3.Angle((currentTargetPosition - currentHeadCursor.origin), (currentHeadCursor.direction));
-                        data_to_save_head.Add(new FrameData<HeadCursorData>(currentTime, unixTimeMilliseconds, study.fittsLaw, head, currentHeadCursor,
-                            currentTargetPosition, head_angularDistance));
-                        break;
-                    case Study.CursorType.Hand:
-                        HandCursorData currentHandCursor = new HandCursorData(cursorController.Handray);
-                        float hand_angularDistance = Vector3.Angle((currentTargetPosition - currentHandCursor.origin), (currentHandCursor.direction));
-                        data_to_save_hand.Add(new FrameData<HandCursorData>(currentTime, unixTimeMilliseconds, study.fittsLaw, head, currentHandCursor,
-                            currentTargetPosition, hand_angularDistance));
-                        break;
+                    int samplesDue = 0;
+                    while (_trialLogAccum >= logInterval && samplesDue < 8)
+                    {
+                        RecordTrialFrame();
+                        _trialLogAccum -= logInterval;
+                        samplesDue++;
+                    }
                 }
 
                 if (study.fittsLaw.check_timeout() && study.fittsLaw.onGoing == false)
@@ -293,6 +285,37 @@ public class GameManager : MonoBehaviour
             case SCENE.FINISHED:
                 break;
         }
+    }
+
+    void RecordTrialFrame()
+    {
+        float currentTime = Time.realtimeSinceStartup;
+        long unixTimeMilliseconds = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+        Vector3 currentTargetPosition = targetControl.getOneTarget(study.fittsLaw.endNum).position;
+
+        switch (study.currentCursor)
+        {
+            case Study.CursorType.Eye:
+                EyeCursorData currentEyeCursor = new EyeCursorData(new Ray(cursorController.eyePosition, cursorController.eyeDirection));
+                float eye_angularDistance = Vector3.Angle((currentTargetPosition - cursorController.eyePosition), cursorController.eyeDirection);
+                data_to_save_eye.Add(new FrameData<EyeCursorData>(currentTime, unixTimeMilliseconds, study.fittsLaw, head, currentEyeCursor,
+                    currentTargetPosition, eye_angularDistance, _trialLogSeq));
+                break;
+            case Study.CursorType.Head:
+                HeadCursorData currentHeadCursor = new HeadCursorData(new Ray(cursorController.headPosition, cursorController.headDirection));
+                float head_angularDistance = Vector3.Angle((currentTargetPosition - currentHeadCursor.origin), currentHeadCursor.direction);
+                data_to_save_head.Add(new FrameData<HeadCursorData>(currentTime, unixTimeMilliseconds, study.fittsLaw, head, currentHeadCursor,
+                    currentTargetPosition, head_angularDistance, _trialLogSeq));
+                break;
+            case Study.CursorType.Hand:
+                HandCursorData currentHandCursor = new HandCursorData(cursorController.Handray);
+                float hand_angularDistance = Vector3.Angle((currentTargetPosition - currentHandCursor.origin), currentHandCursor.direction);
+                data_to_save_hand.Add(new FrameData<HandCursorData>(currentTime, unixTimeMilliseconds, study.fittsLaw, head, currentHandCursor,
+                    currentTargetPosition, hand_angularDistance, _trialLogSeq));
+                break;
+        }
+
+        _trialLogSeq++;
     }
 
     //public void SetInputMethod(string method)

@@ -588,9 +588,10 @@ namespace StudyDesign
         public int start_num;
         public int end_num;
         public int step_num;
+        public int sample_seq;
 
 
-        public FrameData(float _timestamp, long _unixTimeMilliseconds, StudyDesign.FittsLaw currentFittsLaw, Transform _head, T _cursorData, Vector3 _target_position, float _cursor_angular_distance)
+        public FrameData(float _timestamp, long _unixTimeMilliseconds, StudyDesign.FittsLaw currentFittsLaw, Transform _head, T _cursorData, Vector3 _target_position, float _cursor_angular_distance, int _sample_seq = 0)
         {
             timestamp = _timestamp;
             unixTimeMilliseconds = _unixTimeMilliseconds;
@@ -604,8 +605,19 @@ namespace StudyDesign
             start_num = currentFittsLaw.startNum;
             end_num = currentFittsLaw.endNum;
             step_num = currentFittsLaw.stepNum;
+            sample_seq = _sample_seq;
 
         }
+    }
+
+    [System.Serializable]
+    public class TrialRecording<T>
+    {
+        public string file_name;
+        public int sub_num;
+        public int subsub_num;
+        public float log_sample_rate_hz;
+        public List<FrameData<T>> data;
     }
 
     [System.Serializable]
@@ -614,6 +626,7 @@ namespace StudyDesign
         public string file_name;
         public int sub_num;
         public int subsub_num;
+        public float log_sample_rate_hz;
         public List<FrameData<T>> data;
         Study experiment;
         public TrialData(Study _experiment)
@@ -651,7 +664,15 @@ namespace StudyDesign
         public void SaveDataJson() //TODO
         {
             file_name += string.Join("", experiment.fittsLaw.success_record);
-            string json = JsonConvert.SerializeObject(data, Formatting.Indented);
+            var envelope = new TrialRecording<T>
+            {
+                file_name = file_name,
+                sub_num = sub_num,
+                subsub_num = subsub_num,
+                log_sample_rate_hz = log_sample_rate_hz,
+                data = data,
+            };
+            string json = JsonConvert.SerializeObject(envelope, Formatting.Indented);
             string path = string.Format("{0}/{1}-{2}/", Application.persistentDataPath, sub_num, subsub_num);
             byte[] byteData = Encoding.UTF8.GetBytes(json);
             if (!Directory.Exists(path))
