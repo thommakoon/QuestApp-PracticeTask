@@ -4,7 +4,7 @@ Unity Fitts-law practice app for **Meta Quest**, used in the gazeGait study. Rec
 
 Part of [gazeGait](https://github.com/thommakoon/gaze-gait-process) as a git submodule. OpenEye (calibration + gaze streaming) lives in [thommakoon/OpenEye](https://github.com/thommakoon/OpenEye).
 
-## Publication
+## Reference
 
 Han, M., Shin, Y., Park, Y., Park, G., & Oakley, I. *Effects of Stress on 3D Interface Interaction Techniques.* SSRN (2026).  
 https://ssrn.com/abstract=6052256 · https://doi.org/10.2139/ssrn.6052256
