@@ -296,11 +296,18 @@ public class GameManager : MonoBehaviour
         switch (study.currentCursor)
         {
             case Study.CursorType.Eye:
-                EyeCursorData currentEyeCursor = new EyeCursorData(new Ray(cursorController.eyePosition, cursorController.eyeDirection));
+            {
+                var gp = cursorController.gazeProvider;
+                EyeCursorData currentEyeCursor = new EyeCursorData(
+                    new Ray(cursorController.eyePosition, cursorController.eyeDirection),
+                    neonGazeT: gp != null ? gp.LastNeonTimestampSec : double.NaN,
+                    neonGazeTNs: gp != null ? gp.LastNeonTimestampNs : 0,
+                    questGazeReceivedUnixMs: gp != null ? gp.LastQuestReceivedUnixMs : 0);
                 float eye_angularDistance = Vector3.Angle((currentTargetPosition - cursorController.eyePosition), cursorController.eyeDirection);
                 data_to_save_eye.Add(new FrameData<EyeCursorData>(currentTime, unixTimeMilliseconds, study.fittsLaw, head, currentEyeCursor,
                     currentTargetPosition, eye_angularDistance, _trialLogSeq));
                 break;
+            }
             case Study.CursorType.Head:
                 HeadCursorData currentHeadCursor = new HeadCursorData(new Ray(cursorController.headPosition, cursorController.headDirection));
                 float head_angularDistance = Vector3.Angle((currentTargetPosition - currentHeadCursor.origin), currentHeadCursor.direction);

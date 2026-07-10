@@ -500,37 +500,24 @@ namespace StudyDesign
         public string cursor_type;
         public SerializableVector3 origin;
         public SerializableVector3 direction;
-        //public string target_name;
-        //public bool enabled;
-        //public bool? isEyeCalibrationValid;
-        //public bool isEyeTrackingDataValid;
-        //public bool isEyeTrackingEnabled;
-        //public bool isEyeTrackingEnabledAndValid;
-        //public SerializableVector3 latestEyeGazeOrigin;
-        //public SerializableVector3 latestEyeGazeDirection;
-        //public string eyeTimestamp;
+        /// <summary>OpenEye/Neon unix seconds (gazeVisual.t). NaN if unavailable.</summary>
+        public double neonGazeT;
+        /// <summary>OpenEye/Neon unix ns (gazeVisual.t_ns). 0 if unavailable.</summary>
+        public long neonGazeTNs;
+        /// <summary>Quest unix ms when gazeVisual TCP packet was received. 0 if unavailable.</summary>
+        public long questGazeReceivedUnixMs;
 
-        //public SerializableVector3 ray_origin;
-        //public SerializableVector3 ray_direction;
-        public EyeCursorData(Ray eyeRay) //TODO
+        public EyeCursorData(Ray eyeRay,
+            double neonGazeT = double.NaN,
+            long neonGazeTNs = 0,
+            long questGazeReceivedUnixMs = 0)
         {
             cursor_type = "EYE";
             origin = eyeRay.origin;
             direction = eyeRay.direction;
-            //origin = eyeGazeProvider.GazeOrigin;
-            //direction = eyeGazeProvider.GazeDirection;
-            //target_name = eyeGazeProvider.GazeTarget?.name;
-            //enabled = eyeGazeProvider.Enabled;
-            //isEyeCalibrationValid = eyeGazeProvider.IsEyeCalibrationValid;
-            //isEyeTrackingDataValid = eyeGazeProvider.IsEyeTrackingDataValid;
-            //isEyeTrackingEnabled = eyeGazeProvider.IsEyeTrackingEnabled;
-            //isEyeTrackingEnabledAndValid = eyeGazeProvider.IsEyeTrackingEnabledAndValid;
-            //latestEyeGazeOrigin = eyeGazeProvider.LatestEyeGaze.origin;
-            //latestEyeGazeDirection = eyeGazeProvider.LatestEyeGaze.direction;
-            //eyeTimestamp = eyeGazeProvider.Timestamp.ToString();
-            //ray_origin = eyeRay.Value.origin;
-            //ray_direction = eyeRay.Value.direction;
-
+            this.neonGazeT = neonGazeT;
+            this.neonGazeTNs = neonGazeTNs;
+            this.questGazeReceivedUnixMs = questGazeReceivedUnixMs;
         }
     }
 

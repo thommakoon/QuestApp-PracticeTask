@@ -48,6 +48,12 @@ public class EyeGazeProvider : MonoBehaviour
     public Vector2 LastPlaneMeters { get; private set; }
     public Vector3 LastWorldTarget { get; private set; }
     public Transform OpenEyeReferenceTransform { get; private set; }
+    /// <summary>OpenEye/Neon unix seconds (payload.t). NaN if not OpenEye.</summary>
+    public double LastNeonTimestampSec { get; private set; } = double.NaN;
+    /// <summary>OpenEye/Neon unix ns (payload.t_ns). 0 if absent.</summary>
+    public long LastNeonTimestampNs { get; private set; }
+    /// <summary>Quest unix ms when TCP gazeVisual was received. 0 if absent.</summary>
+    public long LastQuestReceivedUnixMs { get; private set; }
     public Vector3 eyeforward;
     public Vector3 eyeposition;
 
@@ -123,6 +129,9 @@ public class EyeGazeProvider : MonoBehaviour
 
         eyeforward = dir.normalized;
         LastPlaneMeters = sample.planeMeters;
+        LastNeonTimestampSec = sample.timestamp;
+        LastNeonTimestampNs = sample.timestampNs;
+        LastQuestReceivedUnixMs = sample.questReceivedUnixMs;
         Confidence = 1f;
         HasValidGaze = true;
         GazeSequence = _lastOpenEyeSeq;

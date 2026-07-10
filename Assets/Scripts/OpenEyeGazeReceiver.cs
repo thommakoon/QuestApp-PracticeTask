@@ -25,13 +25,18 @@ public class OpenEyeGazeReceiver : MonoBehaviour
 
     public struct GazeSample
     {
+        /// <summary>Neon / OpenEye timestamp in unix seconds (payload.t).</summary>
         public double timestamp;
+        /// <summary>Unix epoch ns from Neon (same units as gaze.csv). 0 if absent.</summary>
+        public long timestampNs;
+        /// <summary>Quest wall-clock unix ms when this TCP packet was received.</summary>
+        public long questReceivedUnixMs;
         public Vector2 planeMeters;
         public bool valid;
     }
 
     [Serializable] class MsgTypeOnly { public string type; }
-    [Serializable] class PayloadGaze { public double t; public float x; public float y; }
+    [Serializable] class PayloadGaze { public double t; public long t_ns; public float x; public float y; }
     [Serializable] class PayloadLaunch { public string package; }
     [Serializable] class MsgGaze { public string type; public PayloadGaze payload; }
     [Serializable] class MsgLaunch { public string type; public PayloadLaunch payload; }
@@ -45,6 +50,8 @@ public class OpenEyeGazeReceiver : MonoBehaviour
     NetworkStream _stream;
     Thread _recvThread;
     CancellationTokenSource _cts;
+
+    static readonly DateTime UnixEpochUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     const int GazeBufCap = 8;
     readonly object _gazeLock = new object();
@@ -170,9 +177,12 @@ public class OpenEyeGazeReceiver : MonoBehaviour
                 if (gazeMsg?.payload == null)
                     continue;
 
+                long questMs = (long)(DateTime.UtcNow - UnixEpochUtc).TotalMilliseconds;
                 EnqueueGaze(new GazeSample
                 {
                     timestamp = gazeMsg.payload.t,
+                    timestampNs = gazeMsg.payload.t_ns,
+                    questReceivedUnixMs = questMs,
                     planeMeters = new Vector2(gazeMsg.payload.x, gazeMsg.payload.y),
                     valid = true,
                 });
