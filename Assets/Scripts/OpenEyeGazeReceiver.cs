@@ -38,8 +38,10 @@ public class OpenEyeGazeReceiver : MonoBehaviour
     [Serializable] class MsgTypeOnly { public string type; }
     [Serializable] class PayloadGaze { public double t; public long t_ns; public float x; public float y; }
     [Serializable] class PayloadLaunch { public string package; }
+    [Serializable] class PayloadSyncPulse { public int seq; public long quest_sent_unix_ms; }
     [Serializable] class MsgGaze { public string type; public PayloadGaze payload; }
     [Serializable] class MsgLaunch { public string type; public PayloadLaunch payload; }
+    [Serializable] class MsgSyncPulse { public string type; public PayloadSyncPulse payload; }
 
     public event Action<string> OnLaunchApp;
 
@@ -50,6 +52,7 @@ public class OpenEyeGazeReceiver : MonoBehaviour
     NetworkStream _stream;
     Thread _recvThread;
     CancellationTokenSource _cts;
+    readonly object _sendLock = new object();
 
     static readonly DateTime UnixEpochUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -66,6 +69,8 @@ public class OpenEyeGazeReceiver : MonoBehaviour
     {
         if (GetComponent<OpenEyeHandoff>() == null)
             gameObject.AddComponent<OpenEyeHandoff>();
+        if (GetComponent<OpenEyeSyncCalibration>() == null)
+            gameObject.AddComponent<OpenEyeSyncCalibration>();
 
         if (autoConnectOnStart)
             _ = StartConnectLoop();
@@ -216,6 +221,57 @@ public class OpenEyeGazeReceiver : MonoBehaviour
             _gazeBuf[_gazeHead] = sample;
             _gazeHead = (_gazeHead + 1) % GazeBufCap;
             _gazeSeq++;
+        }
+    }
+
+    public bool TrySendSyncPulse(int seq, out long questSentUnixMs)
+    {
+        questSentUnixMs = 0;
+        if (_stream == null || CurrentState != State.Connected)
+            return false;
+
+        questSentUnixMs = (long)(DateTime.UtcNow - UnixEpochUtc).TotalMilliseconds;
+        var msg = new MsgSyncPulse
+        {
+            type = "syncPulse",
+            payload = new PayloadSyncPulse
+            {
+                seq = seq,
+                quest_sent_unix_ms = questSentUnixMs,
+            },
+        };
+        return TrySendJson(JsonUtility.ToJson(msg));
+    }
+
+    bool TrySendJson(string json)
+    {
+        if (_stream == null)
+            return false;
+
+        try
+        {
+            byte[] payload = Encoding.UTF8.GetBytes(json);
+            if (payload.Length <= 0 || payload.Length > 10_000_000)
+                return false;
+
+            byte[] header = new byte[4];
+            int len = payload.Length;
+            header[0] = (byte)((len >> 24) & 0xFF);
+            header[1] = (byte)((len >> 16) & 0xFF);
+            header[2] = (byte)((len >> 8) & 0xFF);
+            header[3] = (byte)(len & 0xFF);
+
+            lock (_sendLock)
+            {
+                _stream.Write(header, 0, 4);
+                _stream.Write(payload, 0, payload.Length);
+            }
+            return true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[OpenEye] send error: {e.Message}");
+            return false;
         }
     }
 
