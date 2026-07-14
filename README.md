@@ -36,7 +36,8 @@ This PracticeTask app implements the Fitts / 3D interface interaction paradigm u
 
 ## OpenEye integration
 
-- **TCP client:** `OpenEyeGazeReceiver` → PC port **5051** (`gazeVisual`, `launchApp`).
+- **TCP client:** `OpenEyeGazeReceiver` → PC port **5051** (`gazeVisual`, `launchApp`, `timeEcho`).
+- **Clock sync:** Neon-style **time-echo** (PC↔Quest round-trip, NTP midpoint). OpenEye GUI: **Start Quest↔PC time-echo** → writes `tXX/sync.json` (`offset_quest_to_pc_ns`). Optional phone leg via Pupil `estimate_time_offset`.
 - **Eye gaze:** `EyeGazeProvider` (source = OpenEye) maps PC gaze to a head-fixed ray.
 - **Handoff to OpenEye calib:** `OpenEyeHandoff` on PC **Recalibrate** (`launchApp` → `org.MixedRealityToolkit.MRTK3Sample`).
 

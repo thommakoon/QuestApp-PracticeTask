@@ -39,9 +39,11 @@ public class OpenEyeGazeReceiver : MonoBehaviour
     [Serializable] class PayloadGaze { public double t; public long t_ns; public float x; public float y; }
     [Serializable] class PayloadLaunch { public string package; }
     [Serializable] class PayloadSyncPulse { public int seq; public long quest_sent_unix_ms; }
+    [Serializable] class PayloadTimeEcho { public long pc_t1_ms; public long quest_tH_ms; }
     [Serializable] class MsgGaze { public string type; public PayloadGaze payload; }
     [Serializable] class MsgLaunch { public string type; public PayloadLaunch payload; }
     [Serializable] class MsgSyncPulse { public string type; public PayloadSyncPulse payload; }
+    [Serializable] class MsgTimeEcho { public string type; public PayloadTimeEcho payload; }
 
     public event Action<string> OnLaunchApp;
 
@@ -69,8 +71,7 @@ public class OpenEyeGazeReceiver : MonoBehaviour
     {
         if (GetComponent<OpenEyeHandoff>() == null)
             gameObject.AddComponent<OpenEyeHandoff>();
-        if (GetComponent<OpenEyeSyncCalibration>() == null)
-            gameObject.AddComponent<OpenEyeSyncCalibration>();
+        // Clock sync uses Neon-style PC↔Quest time-echo (round-trip), driven by OpenEye PC.
 
         if (autoConnectOnStart)
             _ = StartConnectLoop();
@@ -172,6 +173,25 @@ public class OpenEyeGazeReceiver : MonoBehaviour
                     var msg = JsonUtility.FromJson<MsgLaunch>(json);
                     _pendingLaunchPackage = msg?.payload?.package ?? "";
                     _pendingLaunchApp = true;
+                    continue;
+                }
+
+                // Neon Time Echo analogue: PC sends t1 → Quest replies t1 + tH ASAP.
+                if (head.type == "timeEcho")
+                {
+                    var echo = JsonUtility.FromJson<MsgTimeEcho>(json);
+                    long t1 = echo?.payload != null ? echo.payload.pc_t1_ms : 0L;
+                    long tH = (long)(DateTime.UtcNow - UnixEpochUtc).TotalMilliseconds;
+                    var reply = new MsgTimeEcho
+                    {
+                        type = "timeEcho",
+                        payload = new PayloadTimeEcho
+                        {
+                            pc_t1_ms = t1,
+                            quest_tH_ms = tH,
+                        },
+                    };
+                    TrySendJson(JsonUtility.ToJson(reply));
                     continue;
                 }
 
