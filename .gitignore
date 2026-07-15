@@ -20,6 +20,9 @@ Thumbs.db
 *.aab
 *_BackUpThisFolder_ButDontShipItWithYourGame/
 
+# Local test / trial exports
+Test_result/
+
 # Unity generated project files
 *.csproj
 *.unityproj
