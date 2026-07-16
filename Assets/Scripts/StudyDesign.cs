@@ -337,9 +337,13 @@ namespace StudyDesign
             Debug.Log(result);
             return selectedNumbers;
         }
-        public void nextStep(bool success = false)
+        public void nextStep(bool success = false, string eventType = "unknown")
         {
             Debug.Log("fittslaw next step");
+            var gm = GameManager.instance;
+            if (!menu && gm != null && gm.current_scene == GameManager.SCENE.TRIAL && _selectionTimerActive)
+                RecordSelectionEnd(success, eventType);
+
             //GameManager.instance.makeSound(success);
             if (!menu)
             {
@@ -388,6 +392,8 @@ namespace StudyDesign
             {
                 GameManager.instance.targetControl.SetCurrentTarget(endNum);
             }
+            if (!menu && GameManager.instance.current_scene == GameManager.SCENE.TRIAL)
+                MarkSelectionStart();
             //for (int i = 0; i < TargetPosition.instance.targets.transform.childCount; i++)
             //{
             //    TargetPosition.instance.getOneTarget(i).GetComponent<TargetVisual>().unmakeCurrentTarget();
@@ -426,6 +432,83 @@ namespace StudyDesign
             }
             return end;
         }
+
+        public readonly List<FittsSelectionLog> selectionLogs = new List<FittsSelectionLog>();
+        float _selectionStartRealtime;
+        bool _selectionTimerActive;
+
+        public void ClearSelectionLogs()
+        {
+            selectionLogs.Clear();
+            _selectionTimerActive = false;
+        }
+
+        public void MarkSelectionStart()
+        {
+            _selectionStartRealtime = Time.realtimeSinceStartup;
+            _selectionTimerActive = true;
+        }
+
+        void RecordSelectionEnd(bool success, string eventType)
+        {
+            var gm = GameManager.instance;
+            if (gm == null || gm.targetControl == null)
+                return;
+
+            float mt = Mathf.Max(0f, Time.realtimeSinceStartup - _selectionStartRealtime);
+            long unixMs = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+            float amp = gm.targetControl.GetFittsAmplitudeM(startNum, endNum);
+            float width = gm.targetControl.GetFittsWidthM();
+            selectionLogs.Add(new FittsSelectionLog
+            {
+                start_num = startNum,
+                end_num = endNum,
+                success = success,
+                event_type = eventType ?? "",
+                movement_time_s = mt,
+                selection_unix_ms = unixMs,
+                selection_unix_ns = unixMs * 1_000_000L,
+                amplitude_m = amp,
+                width_m = width,
+                index_of_difficulty_bits = FittsMetrics.IndexOfDifficulty(amp, width),
+            });
+            _selectionTimerActive = false;
+        }
+    }
+
+    public static class FittsMetrics
+    {
+        public static float IndexOfDifficulty(float amplitudeM, float widthM)
+        {
+            if (widthM <= 0f)
+                return 0f;
+            return Mathf.Log(amplitudeM / widthM + 1f, 2f);
+        }
+    }
+
+    [System.Serializable]
+    public class FittsLayoutMetrics
+    {
+        public float amplitude_m;
+        public float width_m;
+        public float index_of_difficulty_bits;
+        public int step_num;
+        public int total_targets;
+    }
+
+    [System.Serializable]
+    public class FittsSelectionLog
+    {
+        public int start_num;
+        public int end_num;
+        public bool success;
+        public string event_type;
+        public float movement_time_s;
+        public long selection_unix_ms;
+        public long selection_unix_ns;
+        public float amplitude_m;
+        public float width_m;
+        public float index_of_difficulty_bits;
     }
     [System.Serializable]
     public class EyeCursorData
@@ -556,6 +639,8 @@ namespace StudyDesign
         public int sub_num;
         public int subsub_num;
         public float log_sample_rate_hz;
+        public FittsLayoutMetrics fitts_layout;
+        public List<FittsSelectionLog> selections;
         public List<FrameData<T>> data;
     }
 
@@ -603,12 +688,21 @@ namespace StudyDesign
         public void SaveDataJson() //TODO
         {
             file_name += string.Join("", experiment.fittsLaw.success_record);
+            FittsLayoutMetrics layout = null;
+            List<FittsSelectionLog> selections = null;
+            if (GameManager.instance != null && GameManager.instance.targetControl != null)
+                layout = GameManager.instance.targetControl.GetFittsLayoutMetrics(experiment.fittsLaw.stepNum);
+            if (experiment.fittsLaw != null)
+                selections = new List<FittsSelectionLog>(experiment.fittsLaw.selectionLogs);
+
             var envelope = new TrialRecording<T>
             {
                 file_name = file_name,
                 sub_num = sub_num,
                 subsub_num = subsub_num,
                 log_sample_rate_hz = log_sample_rate_hz,
+                fitts_layout = layout,
+                selections = selections,
                 data = data,
             };
             string json = JsonConvert.SerializeObject(envelope, Formatting.Indented);

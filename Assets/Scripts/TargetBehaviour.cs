@@ -99,7 +99,7 @@ public class TargetBehaviour : PointableUnityEventWrapper
             {
                 //go to next step
 
-                GameManager.instance.study.fittsLaw.nextStep(success: true);
+                GameManager.instance.study.fittsLaw.nextStep(success: true, eventType: "dwell");
                 //make success sound
 
             }
@@ -128,11 +128,11 @@ public class TargetBehaviour : PointableUnityEventWrapper
                 {
                     if (current_dwell_status == DWELL_EVENT_TYPE.ON)
                     {
-                        GameManager.instance.study.fittsLaw.nextStep(success: true);
+                        GameManager.instance.study.fittsLaw.nextStep(success: true, eventType: "pinch");
                     }
                     else
                     {
-                        GameManager.instance.study.fittsLaw.nextStep(success: false);
+                        GameManager.instance.study.fittsLaw.nextStep(success: false, eventType: "pinch");
                     }
                 }
             }

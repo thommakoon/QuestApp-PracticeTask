@@ -1,4 +1,5 @@
 using System;
+using StudyDesign;
 using Unity.VisualScripting;
 //using UnityEditor.Experimental.GraphView;
 using UnityEngine;
@@ -262,5 +263,38 @@ public class ControlTargets : MonoBehaviour
             return targets.transform.GetChild(targetNum);
         }
 
+    }
+
+    public float GetFittsWidthM()
+    {
+        return targetSize;
+    }
+
+    public float GetFittsAmplitudeM(int startIdx, int endIdx)
+    {
+        if (targets == null || startIdx < 0 || endIdx < 0
+            || startIdx >= totalTargetNumber || endIdx >= totalTargetNumber)
+            return 0f;
+        Vector3 start = targets.transform.GetChild(startIdx).localPosition;
+        Vector3 end = targets.transform.GetChild(endIdx).localPosition;
+        return Vector3.Distance(start, end);
+    }
+
+    public FittsLayoutMetrics GetFittsLayoutMetrics(int stepNum)
+    {
+        int startIdx = totalTargetNumber - stepNum;
+        int endIdx = startIdx + stepNum;
+        if (endIdx > totalTargetNumber - 1)
+            endIdx -= totalTargetNumber;
+        float amp = GetFittsAmplitudeM(startIdx, endIdx);
+        float width = GetFittsWidthM();
+        return new FittsLayoutMetrics
+        {
+            amplitude_m = amp,
+            width_m = width,
+            index_of_difficulty_bits = FittsMetrics.IndexOfDifficulty(amp, width),
+            step_num = stepNum,
+            total_targets = totalTargetNumber,
+        };
     }
 }

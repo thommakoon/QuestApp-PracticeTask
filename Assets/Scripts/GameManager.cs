@@ -148,6 +148,11 @@ public class GameManager : MonoBehaviour
                 }
                 _trialLogAccum = 0f;
                 _trialLogSeq = 0;
+                if (study.fittsLaw != null && !study.fittsLaw.menu)
+                {
+                    study.fittsLaw.ClearSelectionLogs();
+                    study.fittsLaw.MarkSelectionStart();
+                }
                 break;
 
             case SCENE.AFTER_TRIAL:
@@ -239,7 +244,7 @@ public class GameManager : MonoBehaviour
 
                 if (study.fittsLaw.check_timeout() && study.fittsLaw.onGoing == false)
                 {
-                    study.fittsLaw.nextStep(success: false);
+                    study.fittsLaw.nextStep(success: false, eventType: "timeout");
                 }
                 break;
 
