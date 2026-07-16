@@ -1,6 +1,6 @@
 # QuestApp-PracticeTask
 
-Unity Fitts-law practice app for **Meta Quest**, used in the gazeGait study. Receives mapped eye gaze from the PC **OpenEye** GUI over TCP and supports eye / head / hand cursor conditions with dwell and pinch selection.
+Unity Fitts-law practice app for **Meta Quest**, used in the gazeGait study. Receives mapped eye gaze from the PC **OpenEye** GUI over TCP and supports eye / hand cursor conditions with dwell and pinch selection.
 
 Part of [gazeGait](https://github.com/thommakoon/gaze-gait-process) as a git submodule. OpenEye (calibration + gaze streaming) lives in [thommakoon/OpenEye](https://github.com/thommakoon/OpenEye).
 
@@ -9,7 +9,7 @@ Part of [gazeGait](https://github.com/thommakoon/gaze-gait-process) as a git sub
 Han, M., Shin, Y., Park, Y., Park, G., & Oakley, I. *Effects of Stress on 3D Interface Interaction Techniques.* SSRN (2026).  
 https://ssrn.com/abstract=6052256 · https://doi.org/10.2139/ssrn.6052256
 
-This PracticeTask app implements the Fitts / 3D interface interaction paradigm used in that work (eye, head, and hand cursor conditions with dwell and pinch selection).
+This PracticeTask app implements the Fitts / 3D interface interaction paradigm used in that work (eye and hand cursor conditions with dwell and pinch selection).
 
 ## Android package
 
@@ -26,7 +26,8 @@ This PracticeTask app implements the Fitts / 3D interface interaction paradigm u
 3. **TRIAL** — Fitts ring (11 targets) or menu grid; data logged.
 4. **AFTER_TRIAL** — JSON saved; next condition.
 
-**Conditions** (order counterbalanced by subject id): `EyeDwell`, `EyePinch`, `HeadDwell`, `HeadPinch`.
+**Conditions** (fixed order): `EyeDwell`, `HandPinch`, `EyePinch`.
+- **HandPinch** = hand ray + pinch (same as original PracticeTask / old QuestApp).
 
 | Parameter | Value | Source |
 |-----------|--------|--------|
