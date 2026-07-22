@@ -40,15 +40,19 @@ public class OpenEyeGazeReceiver : MonoBehaviour
     [Serializable] class PayloadLaunch { public string package; }
     [Serializable] class PayloadSyncPulse { public int seq; public long quest_sent_unix_ms; }
     [Serializable] class PayloadTimeEcho { public long pc_t1_ms; public long quest_tH_ms; }
+    [Serializable] class PayloadShowRay { public bool visible; }
     [Serializable] class MsgGaze { public string type; public PayloadGaze payload; }
     [Serializable] class MsgLaunch { public string type; public PayloadLaunch payload; }
     [Serializable] class MsgSyncPulse { public string type; public PayloadSyncPulse payload; }
     [Serializable] class MsgTimeEcho { public string type; public PayloadTimeEcho payload; }
+    [Serializable] class MsgShowRay { public string type; public PayloadShowRay payload; }
 
     public event Action<string> OnLaunchApp;
 
     volatile bool _pendingLaunchApp;
     volatile string _pendingLaunchPackage = "";
+    volatile bool _pendingShowRay;
+    volatile bool _pendingShowRayVisible = true;
 
     TcpClient _client;
     NetworkStream _stream;
@@ -103,6 +107,12 @@ public class OpenEyeGazeReceiver : MonoBehaviour
             _pendingLaunchApp = false;
             string package = _pendingLaunchPackage ?? "";
             OnLaunchApp?.Invoke(package);
+        }
+
+        if (_pendingShowRay)
+        {
+            _pendingShowRay = false;
+            GazeRayVisualizer.SetRaysVisible(_pendingShowRayVisible);
         }
 
         // If connected but no gazeSample for 2.5s, bounce again (PC may have resumed late).
@@ -235,6 +245,14 @@ public class OpenEyeGazeReceiver : MonoBehaviour
                         },
                     };
                     TrySendJson(JsonUtility.ToJson(reply));
+                    continue;
+                }
+
+                if (head.type == "showRay")
+                {
+                    var msg = JsonUtility.FromJson<MsgShowRay>(json);
+                    _pendingShowRayVisible = msg?.payload == null || msg.payload.visible;
+                    _pendingShowRay = true;
                     continue;
                 }
 

@@ -44,22 +44,16 @@ namespace StudyDesign
             Debug.Log("Making new study");
             UnControlledSetSubjectNumber();
             TOTAL_REP = _total_repetition;
-            // Fixed study order (no latin square): EyeDwell → HandPinch → EyePinch.
+            // Fixed study order (no latin square): HeadPinch → HandPinch → EyePinch.
             Conditions = new ConditionType[]
             {
-                ConditionType.EyeDwell,
+                ConditionType.HeadPinch,
                 ConditionType.HandPinch,
                 ConditionType.EyePinch,
             };
 
-            if (sub_num % 2 == 0)
-            {
-                StudyTypes = new StudyType[] { StudyType.Fitts, StudyType.Menu };
-            }
-            else
-            {
-                StudyTypes = new StudyType[] { StudyType.Menu, StudyType.Fitts };
-            }
+            // Fitts only — Menu (color-finding) kept in code but not scheduled.
+            StudyTypes = new StudyType[] { StudyType.Fitts };
 
             SetCondition();
         }
